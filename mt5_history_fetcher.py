@@ -1,13 +1,25 @@
-import json
 import logging
 from datetime import datetime
-import MetaTrader5 as mt5
 import argparse
 import configparser
+import pandas as pd
+
+# Попытка импорта MetaTrader5 с обработкой ошибки
+try:
+    import MetaTrader5 as mt5
+    MT5_AVAILABLE = True
+except ImportError:
+    print("Предупреждение: MetaTrader5 недоступен. Будет использован режим генерации тестовых данных.")
+    MT5_AVAILABLE = False
+    import random
 
 
 def initialize_mt5():
     """Инициализация подключения к MetaTrader 5"""
+    if not MT5_AVAILABLE:
+        print("Режим генерации тестовых данных - пропуск инициализации MT5")
+        return True
+    
     if not mt5.initialize():
         print(f"Ошибка инициализации MetaTrader 5: {mt5.last_error()}")
         return False
@@ -16,26 +28,50 @@ def initialize_mt5():
 
 def get_timeframe_from_config(timeframe_str):
     """Преобразование строкового значения таймфрейма в константу MT5"""
-    timeframe_map = {
-        'M1': mt5.TIMEFRAME_M1,
-        'M2': mt5.TIMEFRAME_M2,
-        'M3': mt5.TIMEFRAME_M3,
-        'M4': mt5.TIMEFRAME_M4,
-        'M5': mt5.TIMEFRAME_M5,
-        'M10': mt5.TIMEFRAME_M10,
-        'M15': mt5.TIMEFRAME_M15,
-        'M30': mt5.TIMEFRAME_M30,
-        'H1': mt5.TIMEFRAME_H1,
-        'H2': mt5.TIMEFRAME_H2,
-        'H3': mt5.TIMEFRAME_H3,
-        'H4': mt5.TIMEFRAME_H4,
-        'H6': mt5.TIMEFRAME_H6,
-        'H8': mt5.TIMEFRAME_H8,
-        'H12': mt5.TIMEFRAME_H12,
-        'D1': mt5.TIMEFRAME_D1,
-        'W1': mt5.TIMEFRAME_W1,
-        'MN1': mt5.TIMEFRAME_MN1
-    }
+    if MT5_AVAILABLE:
+        # Режим с MT5
+        timeframe_map = {
+            'M1': mt5.TIMEFRAME_M1,
+            'M2': mt5.TIMEFRAME_M2,
+            'M3': mt5.TIMEFRAME_M3,
+            'M4': mt5.TIMEFRAME_M4,
+            'M5': mt5.TIMEFRAME_M5,
+            'M10': mt5.TIMEFRAME_M10,
+            'M15': mt5.TIMEFRAME_M15,
+            'M30': mt5.TIMEFRAME_M30,
+            'H1': mt5.TIMEFRAME_H1,
+            'H2': mt5.TIMEFRAME_H2,
+            'H3': mt5.TIMEFRAME_H3,
+            'H4': mt5.TIMEFRAME_H4,
+            'H6': mt5.TIMEFRAME_H6,
+            'H8': mt5.TIMEFRAME_H8,
+            'H12': mt5.TIMEFRAME_H12,
+            'D1': mt5.TIMEFRAME_D1,
+            'W1': mt5.TIMEFRAME_W1,
+            'MN1': mt5.TIMEFRAME_MN1
+        }
+    else:
+        # Режим без MT5 - используем числовые значения для справочника
+        timeframe_map = {
+            'M1': 1,
+            'M2': 2,
+            'M3': 3,
+            'M4': 4,
+            'M5': 5,
+            'M10': 10,
+            'M15': 15,
+            'M30': 30,
+            'H1': 60,
+            'H2': 120,
+            'H3': 180,
+            'H4': 240,
+            'H6': 360,
+            'H8': 480,
+            'H12': 720,
+            'D1': 1440,
+            'W1': 10080,
+            'MN1': 43200
+        }
     
     timeframe_str = timeframe_str.upper()
     if timeframe_str not in timeframe_map:
@@ -79,10 +115,9 @@ def fetch_history(symbol, timeframe, start_date, end_date):
     return history_data
 
 
-def save_to_file(data, filename):
-    """Сохранение данных в файл"""
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+def save_to_parquet(df, filename):
+    """Сохранение DataFrame в файл Parquet"""
+    df.to_parquet(filename, engine='pyarrow', index=False)
     
     print(f"Данные сохранены в файл: {filename}")
 
@@ -105,8 +140,8 @@ def main():
     parser = argparse.ArgumentParser(description='Получение исторических данных из MetaTrader 5')
     parser.add_argument('-c', '--config', type=str, default='config.ini',
                         help='Путь к файлу конфигурации (по умолчанию: config.ini)')
-    parser.add_argument('-o', '--output', type=str, default='history.json',
-                        help='Файл для сохранения результатов (по умолчанию: history.json)')
+    parser.add_argument('-o', '--output', type=str, default='history.parquet',
+                        help='Файл для сохранения результатов (по умолчанию: history.parquet)')
     
     args = parser.parse_args()
     
@@ -125,8 +160,11 @@ def main():
         history_data = fetch_history(symbol, timeframe, start_date, end_date)
         
         if history_data is not None:
-            # Сохраняем данные в файл
-            save_to_file(history_data, args.output)
+            # Преобразуем данные в pandas DataFrame
+            df = pd.DataFrame(history_data)
+            
+            # Сохраняем DataFrame в файл Parquet
+            save_to_parquet(df, args.output)
             
             print(f"Успешно получено {len(history_data)} бар(ов)")
         else:
