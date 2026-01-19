@@ -89,8 +89,8 @@ def get_timeframe_from_config(timeframe_str):
 def format_time(time):
     """Преобразование unix time в формат строки"""
     time_format = "%Y-%m-%d %H:%M:%S"
-    if info.expiration_time > 0:
-        exp_dt = datetime.fromtimestamp(info.expiration_time)
+    if time > 0:
+        exp_dt = datetime.fromtimestamp(time)
         exp_str = exp_dt.strftime(time_format)
     else:
         exp_str = "Нет"
