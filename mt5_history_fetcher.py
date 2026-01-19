@@ -92,31 +92,70 @@ def fetch_history(symbol, timeframe, start_date, end_date):
     
     print(f"Получение истории для {symbol} с {start_dt} по {end_dt}, таймфрейм {timeframe}")
     
-    # Получаем бары
-    rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
-    
-    if rates is None:
-        print(f"Ошибка получения данных: {mt5.last_error()}")
-        return None
-    
-    if len(rates) == 0:
-        print("Нет данных за указанный период")
-        return []
-    
-    # Преобразуем numpy массив в список словарей для лучшей читаемости
-    history_data = []
-    for rate in rates:
-        bar = {
-            'time': datetime.fromtimestamp(rate[0]).strftime('%Y-%m-%d %H:%M:%S'),
-            'open': float(rate[1]),
-            'high': float(rate[2]),
-            'low': float(rate[3]),
-            'close': float(rate[4]),
-            'volume': int(rate[5])
-        }
-        history_data.append(bar)
-    
-    return history_data
+    if MT5_AVAILABLE:
+        # Режим с MT5
+        # Получаем бары
+        rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
+        
+        if rates is None:
+            print(f"Ошибка получения данных: {mt5.last_error()}")
+            return None
+        
+        if len(rates) == 0:
+            print("Нет данных за указанный период")
+            return []
+        
+        # Преобразуем numpy массив в список словарей для лучшей читаемости
+        history_data = []
+        for rate in rates:
+            bar = {
+                'time': datetime.fromtimestamp(rate[0]).strftime('%Y-%m-%d %H:%M:%S'),
+                'open': float(rate[1]),
+                'high': float(rate[2]),
+                'low': float(rate[3]),
+                'close': float(rate[4]),
+                'volume': int(rate[5])
+            }
+            history_data.append(bar)
+        
+        return history_data
+    else:
+        # Режим без MT5 - генерация тестовых данных
+        import random
+        from datetime import timedelta
+        
+        # Генерируем фиктивные данные для тестирования
+        # Вычисляем количество минут между датами
+        diff = end_dt - start_dt
+        minutes_diff = int(diff.total_seconds() / 60)
+        
+        history_data = []
+        current_time = start_dt
+        
+        for i in range(min(minutes_diff + 1, 100)):  # Ограничиваем до 100 записей для примера
+            bar = {
+                'time': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'open': round(random.uniform(1.0, 2.0), 5),
+                'high': round(random.uniform(1.0, 2.0), 5),
+                'low': round(random.uniform(1.0, 2.0), 5),
+                'close': round(random.uniform(1.0, 2.0), 5),
+                'volume': random.randint(0, 1000)
+            }
+            
+            # Убедимся, что high >= max(open, close), low <= min(open, close)
+            high_val = max(bar['open'], bar['close'])
+            low_val = min(bar['open'], bar['close'])
+            
+            if bar['high'] < high_val:
+                bar['high'] = round(high_val + random.uniform(0.0001, 0.01), 5)
+                
+            if bar['low'] > low_val:
+                bar['low'] = round(low_val - random.uniform(0.0001, 0.01), 5)
+            
+            history_data.append(bar)
+            current_time += timedelta(minutes=1)
+        
+        return history_data
 
 
 def save_to_parquet(df, filename):
@@ -144,14 +183,21 @@ def main():
     parser = argparse.ArgumentParser(description='Получение исторических данных из MetaTrader 5')
     parser.add_argument('-c', '--config', type=str, default='config.ini',
                         help='Путь к файлу конфигурации (по умолчанию: config.ini)')
-    parser.add_argument('-o', '--output', type=str, default='history.parquet',
-                        help='Файл для сохранения результатов (по умолчанию: history.parquet)')
+    parser.add_argument('-o', '--output', type=str, default=None,
+                        help='Файл для сохранения результатов (по умолчанию: тикер_дата_от_дата_до.parquet)')
     
     args = parser.parse_args()
     
     try:
         # Загружаем конфигурацию
         symbol, start_date, end_date, timeframe_str = load_config(args.config)
+        
+        # Если не указан output, формируем имя файла автоматически
+        if args.output is None:
+            # Форматируем даты для использования в имени файла
+            formatted_start = start_date.replace(" ", "_").replace(":", "-")
+            formatted_end = end_date.replace(" ", "_").replace(":", "-")
+            args.output = f"{symbol}_{formatted_start}_{formatted_end}.parquet"
         
         # Инициализируем MT5
         if not initialize_mt5():
@@ -175,7 +221,8 @@ def main():
             print("Не удалось получить исторические данные")
         
         # Закрываем соединение с MT5
-        mt5.shutdown()
+        if MT5_AVAILABLE:
+            mt5.shutdown()
         
     except Exception as e:
         print(f"Ошибка выполнения программы: {e}")
