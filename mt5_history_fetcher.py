@@ -96,6 +96,47 @@ def format_time(time):
         exp_str = "Нет"
     return exp_str
 
+def get_full_history(symbol, timeframe):
+    if not mt5.initialize():
+        raise RuntimeError("Не удалось инициализировать MT5")
+
+    # Убедиться, что символ доступен
+    if not mt5.symbol_select(symbol, True):
+        raise ValueError(f"Символ {symbol} недоступен")
+
+    all_rates = []
+    last_time = datetime.now()
+    count = 10000  # максимальное количество свечей за раз
+
+    while True:
+        # Получаем данные от last_time назад
+        rates = mt5.copy_rates_from(symbol, timeframe, last_time, count)
+        
+        if rates is None or len(rates) == 0:
+            break
+
+        # Преобразуем в DataFrame для удобства
+        df = pd.DataFrame(rates)
+        df['time'] = pd.to_datetime(df['time'], unit='s')
+        
+        # Добавляем в общий список
+        all_rates.append(df)
+        
+        # Обновляем last_time — самая ранняя свеча в этом блоке
+        last_time = df['time'].min()
+        
+        # Если получено меньше, чем запрашивали — достигли начала
+        if len(rates) < count:
+            break
+
+    mt5.shutdown()
+    
+    if not all_rates:
+        return pd.DataFrame()
+    
+    # Объединяем и сортируем по времени
+    full_df = pd.concat(all_rates).sort_values('time').reset_index(drop=True)
+    return full_df
 
 def fetch_history(symbol, timeframe, start_date, end_date):
     """Получение исторических данных из MetaTrader 5"""
@@ -121,7 +162,8 @@ def fetch_history(symbol, timeframe, start_date, end_date):
         
 
         # Получаем бары
-        rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
+        #rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
+        rates = get_full_history(symbol, timeframe)
         
         if rates is None:
             print(f"Ошибка получения данных: {mt5.last_error()}")
