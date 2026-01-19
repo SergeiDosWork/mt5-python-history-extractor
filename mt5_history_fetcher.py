@@ -258,7 +258,7 @@ def main():
             # Форматируем даты для использования в имени файла
             formatted_start = start_date.replace(" ", "_").replace(":", "-")
             formatted_end = end_date.replace(" ", "_").replace(":", "-")
-            args.output = f"{symbol}_{formatted_start}_{formatted_end}.parquet"
+            args.output = f"{symbol}.parquet"
         
         # Инициализируем MT5
         if not initialize_mt5():
@@ -272,8 +272,8 @@ def main():
         
         if history_data is not None:
 
-            min_time = df['time'].min()
-            max_time = df['time'].max()
+            min_time = history_data['time'].min()
+            max_time = history_data['time'].max()
             print(f"Получены данные за период от {min_time} до {max_time}")
             # Преобразуем данные в pandas DataFrame
             df = pd.DataFrame(history_data)
