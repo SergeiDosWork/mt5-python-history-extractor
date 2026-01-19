@@ -94,6 +94,9 @@ def fetch_history(symbol, timeframe, start_date, end_date):
     
     if MT5_AVAILABLE:
         # Режим с MT5
+        if not mt5.symbol_select(symbol, True):
+            print(f"Символ {symbol} не найден")
+            return
         # Получаем бары
         rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
         
