@@ -27,6 +27,9 @@ def initialize_mt5():
     print(mt5.terminal_info())
     # get data on MetaTrader 5 version
     print(mt5.version())
+    symbols = mt5.symbols_get()
+    df = pd.DataFrame(symbols)
+    df.to_csv("symbols.csv", index=False, encoding="utf-8")
     return True
 
 
