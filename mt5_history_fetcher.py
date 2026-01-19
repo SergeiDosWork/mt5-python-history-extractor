@@ -271,6 +271,10 @@ def main():
         history_data = fetch_history(symbol, timeframe, start_date, end_date)
         
         if history_data is not None:
+
+            min_time = df['time'].min()
+            max_time = df['time'].max()
+            print(f"Получены данные за период от {min_time} до {max_time}")
             # Преобразуем данные в pandas DataFrame
             df = pd.DataFrame(history_data)
             
