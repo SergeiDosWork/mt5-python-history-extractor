@@ -100,6 +100,11 @@ def fetch_history(symbol, timeframe, start_date, end_date):
         if not mt5.symbol_select(symbol, True):
             print(f"Символ {symbol} не найден")
             return
+        symbol_info = mt5.symbol_info(symbol)
+        print(f"Дата начала для символа: {symbol_info.start_time}")
+        print(f"Дата экспирации для символа: {symbol_info.expiration_time}")
+        
+
         # Получаем бары
         rates = mt5.copy_rates_range(symbol, timeframe, start_dt, end_dt)
         
