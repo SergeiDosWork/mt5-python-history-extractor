@@ -97,13 +97,6 @@ def format_time(time):
     return exp_str
 
 def get_full_history(symbol, timeframe):
-    if not mt5.initialize():
-        raise RuntimeError("Не удалось инициализировать MT5")
-
-    # Убедиться, что символ доступен
-    if not mt5.symbol_select(symbol, True):
-        raise ValueError(f"Символ {symbol} недоступен")
-
     all_rates = []
     last_time = datetime.now()
     count = 10000  # максимальное количество свечей за раз
@@ -128,8 +121,6 @@ def get_full_history(symbol, timeframe):
         # Если получено меньше, чем запрашивали — достигли начала
         if len(rates) < count:
             break
-
-    mt5.shutdown()
     
     if not all_rates:
         return pd.DataFrame()
