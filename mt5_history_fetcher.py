@@ -164,20 +164,22 @@ def fetch_history(symbol, timeframe, start_date, end_date):
             print("Нет данных за указанный период")
             return []
         
+        return rates
+
         # Преобразуем numpy массив в список словарей для лучшей читаемости
-        history_data = []
-        for rate in rates:
-            bar = {
-                'time': datetime.fromtimestamp(rate[0]).strftime('%Y-%m-%d %H:%M:%S'),
-                'open': float(rate[1]),
-                'high': float(rate[2]),
-                'low': float(rate[3]),
-                'close': float(rate[4]),
-                'volume': int(rate[5])
-            }
-            history_data.append(bar)
+        # history_data = []
+        # for rate in rates:
+        #     bar = {
+        #         'time': datetime.fromtimestamp(rate[0]).strftime('%Y-%m-%d %H:%M:%S'),
+        #         'open': float(rate[1]),
+        #         'high': float(rate[2]),
+        #         'low': float(rate[3]),
+        #         'close': float(rate[4]),
+        #         'volume': int(rate[5])
+        #     }
+        #     history_data.append(bar)
         
-        return history_data
+        # return history_data
     else:
         # Режим без MT5 - генерация тестовых данных
         import random
