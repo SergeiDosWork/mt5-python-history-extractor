@@ -86,6 +86,16 @@ def get_timeframe_from_config(timeframe_str):
     
     return timeframe_map[timeframe_str]
 
+def format_time(time):
+    """Преобразование unix time в формат строки"""
+    time_format = "%Y-%m-%d %H:%M:%S"
+    if info.expiration_time > 0:
+        exp_dt = datetime.fromtimestamp(info.expiration_time)
+        exp_str = exp_dt.strftime(time_format)
+    else:
+        exp_str = "Нет"
+    return exp_str
+
 
 def fetch_history(symbol, timeframe, start_date, end_date):
     """Получение исторических данных из MetaTrader 5"""
@@ -101,8 +111,9 @@ def fetch_history(symbol, timeframe, start_date, end_date):
             print(f"Символ {symbol} не найден")
             return
         symbol_info = mt5.symbol_info(symbol)
-        print(f"Дата начала для символа: {symbol_info.start_time}")
-        print(f"Дата экспирации для символа: {symbol_info.expiration_time}")
+        print(f"Дата символа: {format_time(symbol_info.time)}")
+        print(f"Дата начала для символа: {format_time(symbol_info.start_time)}")
+        print(f"Дата экспирации для символа: {format_time(symbol_info.expiration_time)}")
         
 
         # Получаем бары
