@@ -23,6 +23,10 @@ def initialize_mt5():
     if not mt5.initialize():
         print(f"Ошибка инициализации MetaTrader 5: {mt5.last_error()}")
         return False
+    # request connection status and parameters
+    print(mt5.terminal_info())
+    # get data on MetaTrader 5 version
+    print(mt5.version())
     return True
 
 
