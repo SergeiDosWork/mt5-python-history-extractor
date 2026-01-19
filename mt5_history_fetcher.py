@@ -114,6 +114,10 @@ def fetch_history(symbol, timeframe, start_date, end_date):
         print(f"Дата символа: {format_time(symbol_info.time)}")
         print(f"Дата начала для символа: {format_time(symbol_info.start_time)}")
         print(f"Дата экспирации для символа: {format_time(symbol_info.expiration_time)}")
+        tick_value = symbol_info.trade_tick_value  # Стоимость одного тика в валюте счёта
+        tick_size = symbol_info.trade_tick_size    # Размер тика в цене
+        curr = symbol_info.currency_base    # Размер тика в цене
+        print(f"Стоимость 1 пункта: {tick_value} {symbol_info.currency_profit} {curr}")
         
 
         # Получаем бары
